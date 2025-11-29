@@ -2,16 +2,22 @@ import { GoogleGenAI } from "@google/genai";
 
 export const generateCVAdvice = async (jobTitle: string): Promise<string> => {
   let apiKey = '';
+  
+  // Extremely defensive check for environment variables to prevent browser crashes
   try {
-    // Safe check for process.env to avoid "ReferenceError: process is not defined" in browsers
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process?.env?.API_KEY) {
+      // @ts-ignore
       apiKey = process.env.API_KEY;
     }
   } catch (e) {
-    console.warn("Environnement process non disponible");
+    // Silently fail on env access, handled below
   }
 
-  if (!apiKey) return "Clé API manquante ou inaccessible. Impossible de générer des conseils.";
+  if (!apiKey) {
+    console.warn("Gemini API Key missing. Skipping AI generation.");
+    return "L'assistant IA n'est pas configuré (Clé API manquante).";
+  }
 
   const ai = new GoogleGenAI({ apiKey });
 
