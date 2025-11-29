@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>CVLM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              electric: {
+                50: '#f0f7ff',
+                100: '#e0effe',
+                400: '#38bdf8',
+                500: '#0ea5e9',
+                600: '#0284c7', // Primary Electric Blue
+                700: '#0369a1',
+              },
+              glass: {
+                surface: 'rgba(255, 255, 255, 0.65)',
+                border: 'rgba(255, 255, 255, 0.5)',
+                highlight: 'rgba(255, 255, 255, 0.8)',
+              }
+            },
+            boxShadow: {
+              'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+              'neon': '0 0 10px rgba(14, 165, 233, 0.3)',
+            },
+            backdropBlur: {
+              'xs': '2px',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%, #e0effe 100%);
+        min-height: 100vh;
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* Hide scrollbar for clean UI */
+      ::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
