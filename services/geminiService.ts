@@ -1,8 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const generateCVAdvice = async (jobTitle: string): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "Clé API manquante. Impossible de générer des conseils.";
+  let apiKey = '';
+  try {
+    // Safe check for process.env to avoid "ReferenceError: process is not defined" in browsers
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      apiKey = process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Environnement process non disponible");
+  }
+
+  if (!apiKey) return "Clé API manquante ou inaccessible. Impossible de générer des conseils.";
 
   const ai = new GoogleGenAI({ apiKey });
 
