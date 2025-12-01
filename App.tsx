@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Screen, UserCV, Template, CVRequest } from './types';
+import React, { useState, useEffect } from 'react';
+import { Screen, UserCV, Template, CVRequest, UserProfile } from './types';
 import { Onboarding } from './views/Onboarding';
 import { Login } from './views/Login';
 import { Dashboard } from './views/Dashboard';
@@ -26,12 +26,47 @@ const MOCK_TEMPLATES: Template[] = [
   { id: '4', name: 'Executive Suite', thumbnail: 'https://picsum.photos/300/400?random=4', tags: ['CV', 'Manager'], isPremium: false, isFavorite: false },
 ];
 
+const DEFAULT_PROFILE: UserProfile = {
+  name: 'Alexandre Dupont',
+  email: 'alexandre.dupont@example.com',
+  referralCode: 'CVLM-PREM-2024',
+  points: 120
+};
+
 const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>(Screen.ONBOARDING);
-  const [cvs, setCvs] = useState<UserCV[]>(MOCK_CVS_INITIAL);
-  const [requests, setRequests] = useState<CVRequest[]>(MOCK_REQUESTS_INITIAL);
+  
+  // Persistence State Initialization
+  const [cvs, setCvs] = useState<UserCV[]>(() => {
+    const saved = localStorage.getItem('cvs');
+    return saved ? JSON.parse(saved) : MOCK_CVS_INITIAL;
+  });
+  
+  const [requests, setRequests] = useState<CVRequest[]>(() => {
+    const saved = localStorage.getItem('requests');
+    return saved ? JSON.parse(saved) : MOCK_REQUESTS_INITIAL;
+  });
+
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('userProfile');
+    return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+  });
+
   const [templates, setTemplates] = useState<Template[]>(MOCK_TEMPLATES);
   const [selectedTemplateForForm, setSelectedTemplateForForm] = useState<Template | null>(null);
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('cvs', JSON.stringify(cvs));
+  }, [cvs]);
+
+  useEffect(() => {
+    localStorage.setItem('requests', JSON.stringify(requests));
+  }, [requests]);
+
+  useEffect(() => {
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+  }, [userProfile]);
 
   const handleStartForm = (templateId: string) => {
     const tmpl = templates.find(t => t.id === templateId) || null;
@@ -56,6 +91,10 @@ const App: React.FC = () => {
 
   const handleToggleFavorite = (id: string) => {
     setTemplates(prev => prev.map(t => t.id === id ? { ...t, isFavorite: !t.isFavorite } : t));
+  };
+
+  const handleUpdateProfile = (newProfile: Partial<UserProfile>) => {
+    setUserProfile(prev => ({ ...prev, ...newProfile }));
   };
 
   const renderScreen = () => {
@@ -87,7 +126,13 @@ const App: React.FC = () => {
       case Screen.COMMUNITY:
         return <Community />;
       case Screen.SETTINGS:
-        return <Settings setScreen={setScreen} />;
+        return (
+          <Settings 
+            setScreen={setScreen} 
+            userProfile={userProfile}
+            onUpdateProfile={handleUpdateProfile}
+          />
+        );
       case Screen.CV_FORM:
         return (
           <CVForm 

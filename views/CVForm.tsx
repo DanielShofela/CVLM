@@ -8,6 +8,7 @@ import {
   Wand2, Send, Camera, Info, AlertCircle 
 } from 'lucide-react';
 import { Screen, Template } from '../types';
+import { saveCVRequest } from '../services/supabaseClient';
 
 interface CVFormProps {
   setScreen: (screen: Screen) => void;
@@ -105,24 +106,39 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
     }, 1500);
   };
 
-  // Validation
-  const validateStep = () => {
-    if (step === 1) {
-      if (!formData.fullName || !formData.email) return false;
-      const emailRegex = /^\S+@\S+\.\S+$/;
-      if (!emailRegex.test(formData.email)) return false;
-    }
-    if (step === 8 && !formData.draft) return false;
-    return true;
-  };
-
   const handleNext = () => {
-    if (validateStep()) {
-      setStep(prev => Math.min(prev + 1, 9));
-      window.scrollTo(0, 0);
-    } else {
-      alert("Veuillez remplir les champs obligatoires (Nom, Email) ou générer le brouillon.");
+    // Step 1 Validation: Informations Personnelles
+    if (step === 1) {
+      const cleanEmail = formData.email.trim();
+      const cleanName = formData.fullName.trim();
+
+      if (!cleanName) {
+        alert("Le nom complet est requis pour continuer.");
+        return;
+      }
+
+      // Regex robuste qui accepte les emails standards
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+        alert("Adresse email invalide. Vérifiez qu'il n'y a pas d'espaces inutiles.");
+        return;
+      }
+
+      // Mise à jour state avec les valeurs nettoyées (sans espaces)
+      if (cleanEmail !== formData.email || cleanName !== formData.fullName) {
+        setFormData(prev => ({ ...prev, email: cleanEmail, fullName: cleanName }));
+      }
     }
+
+    // Step 8 Validation: Assistant IA
+    if (step === 8 && !formData.draft) {
+      alert("Veuillez cliquer sur 'Générer l'ébauche' pour créer votre profil avec l'IA.");
+      return;
+    }
+
+    // Passer à l'étape suivante
+    setStep(prev => Math.min(prev + 1, 9));
+    window.scrollTo(0, 0);
   };
 
   const handleBack = () => {
@@ -130,7 +146,7 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
     window.scrollTo(0, 0);
   };
 
-  // Formspree Submission
+  // Submission
   const handleSubmit = async () => {
     setStatus('sending');
 
@@ -138,7 +154,8 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
     const formattedEducations = formData.educations.map(e => `${e.degree} à ${e.school} (${e.year})`).join('\n');
     const formattedExperiences = formData.experiences.map(e => `${e.role} chez ${e.company} (${e.duration}): ${e.description}`).join('\n');
 
-    const payload = {
+    // Payload for Formspree
+    const emailPayload = {
       _subject: `Demande CV - ${selectedTemplate?.name || 'Inconnu'} - ${formData.fullName}`,
       email: formData.email,
       name: formData.fullName,
@@ -166,13 +183,21 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
     };
 
     try {
+      // 1. Send to Supabase (Database)
+      await saveCVRequest({
+        ...formData,
+        templateName: selectedTemplate?.name || 'Inconnu',
+        templateId: selectedTemplate?.id
+      });
+
+      // 2. Send to Formspree (Email Notification)
       const res = await fetch('https://formspree.io/f/mblaqgej', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(emailPayload)
       });
 
       if (res.ok) {
@@ -184,6 +209,8 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
         setStatus('error');
       }
     } catch (error) {
+      console.error("Submission error:", error);
+      // Even if one fails, we check logic. Here simple error status.
       setStatus('error');
     }
   };
@@ -365,7 +392,7 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
                 />
                 {!formData.draft && (
                    <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 backdrop-blur-sm rounded-xl">
-                      <Button onClick={generateDraft} className="shadow-xl">
+                      <Button onClick={generateDraft} type="button" className="shadow-xl">
                         <Wand2 size={18} /> Générer l'ébauche
                       </Button>
                    </div>
@@ -445,17 +472,17 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
       {/* Footer Actions */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-200 z-20 flex gap-4 max-w-md mx-auto">
          {step > 0 && (
-           <Button variant="secondary" onClick={handleBack} className="flex-1">
+           <Button variant="secondary" onClick={handleBack} type="button" className="flex-1">
              Retour
            </Button>
          )}
          
          {step < 9 ? (
-           <Button onClick={handleNext} fullWidth={step === 0} className="flex-1">
+           <Button onClick={handleNext} type="button" fullWidth={step === 0} className="flex-1">
              {step === 0 ? "Commencer" : "Suivant"} <ArrowRight size={18} />
            </Button>
          ) : (
-            <Button onClick={handleSubmit} className="flex-1 bg-green-600 hover:bg-green-700 shadow-green-200" disabled={status === 'sending' || status === 'success'}>
+            <Button onClick={handleSubmit} type="button" className="flex-1 bg-green-600 hover:bg-green-700 shadow-green-200" disabled={status === 'sending' || status === 'success'}>
               {status === 'sending' ? 'Envoi...' : 'Envoyer la demande'} <Send size={18} />
             </Button>
          )}
