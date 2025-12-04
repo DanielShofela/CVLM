@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, FileText, Database, Settings } from 'lucide-react';
+import { LayoutGrid, FileText, Database, Settings, Smartphone } from 'lucide-react';
 import { Screen } from '../types';
 
 interface BottomNavProps {
@@ -38,6 +38,32 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, setScreen }
           </button>
         );
       })}
+
+        {/* Install button (PWA) - mobile install prompt */}
+        <button
+          key="install"
+          onClick={() => {
+            // Access global deferredPrompt if available
+            const dp: any = (window as any).deferredPrompt;
+            if (dp) {
+              dp.prompt();
+              dp.userChoice.then((choiceResult: any) => {
+                console.log('User choice for install:', choiceResult);
+                // Clear prompt reference
+                (window as any).deferredPrompt = null;
+              });
+            } else {
+              // Fallback: show a short instruction for iOS
+              alert('Pour installer l\'application : ouvrez le menu du navigateur et choisissez « Ajouter à l\'écran d\'accueil ».');
+            }
+          }}
+          className="flex flex-col items-center gap-1 w-12 group"
+          title="Installer l'app"
+        >
+          <div className="p-2 rounded-full text-slate-500 group-hover:text-slate-700">
+            <Smartphone size={22} />
+          </div>
+        </button>
     </div>
   );
 };

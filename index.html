@@ -49,6 +49,14 @@
     
     <!-- Service Worker Registration -->
     <script>
+      // Capture the browser PWA install prompt so we can trigger it from the UI
+      window.deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        console.log('beforeinstallprompt captured');
+      });
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js')
