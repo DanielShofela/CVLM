@@ -22,6 +22,24 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
   const [errorMessage, setErrorMessage] = useState('');
   const [generateCover, setGenerateCover] = useState(false);
   const [promoCode, setPromoCode] = useState('');
+  const [promoUsedByMe, setPromoUsedByMe] = useState<boolean>(() => {
+    try { return localStorage.getItem('promoUsedByMe') === 'true'; } catch { return false; }
+  });
+
+  const markPromoUsed = (code: string) => {
+    try {
+      localStorage.setItem('promoUsedByMe', 'true');
+      const raw = localStorage.getItem('usedPromoCodes') || '[]';
+      const arr: string[] = JSON.parse(raw);
+      if (!arr.includes(code)) {
+        arr.push(code);
+        localStorage.setItem('usedPromoCodes', JSON.stringify(arr));
+      }
+      setPromoUsedByMe(true);
+    } catch (err) {
+      console.warn('Could not persist promo usage locally', err);
+    }
+  };
   const [isGenerating, setIsGenerating] = useState(false);
   const [showLoadVersions, setShowLoadVersions] = useState(true);
   const [savedVersions, setSavedVersions] = useState(getAllLMVersions());
@@ -139,6 +157,8 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
         );
 
         setStatus('success');
+        // mark promo used locally so field doesn't appear again for this client
+        if (promoCode) markPromoUsed(promoCode.trim());
         setTimeout(() => {
           onSubmitSuccess(selectedTemplate?.name || 'Lettre de Motivation');
           setScreen(Screen.DASHBOARD);
@@ -320,17 +340,19 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
         </div>
 
         {/* Promo Code Field */}
-        <div>
-          <label className="label">Code promo (optionnel)</label>
-          <input
-            type="text"
-            placeholder="Entrez un code promo"
-            value={promoCode}
-            onChange={e => setPromoCode(e.target.value)}
-            className="input-field"
-          />
-          <p className="text-xs text-slate-400 mt-2">Ne saisissez pas votre propre code de parrainage.</p>
-        </div>
+        {!promoUsedByMe && (
+          <div>
+            <label className="label">Code promo (optionnel)</label>
+            <input
+              type="text"
+              placeholder="Entrez un code promo"
+              value={promoCode}
+              onChange={e => setPromoCode(e.target.value)}
+              className="input-field"
+            />
+            <p className="text-xs text-slate-400 mt-2">Ne saisissez pas votre propre code de parrainage.</p>
+          </div>
+        )}
 
         {/* Error Message */}
         {status === 'error' && (

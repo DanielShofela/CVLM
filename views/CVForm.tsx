@@ -43,6 +43,26 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [promoCode, setPromoCode] = useState('');
+  const [promoUsedByMe, setPromoUsedByMe] = useState<boolean>(() => {
+    try { return localStorage.getItem('promoUsedByMe') === 'true'; } catch { return false; }
+  });
+
+  const markPromoUsed = (code: string) => {
+    try {
+      // track that this client has used a promo (prevents showing the field again locally)
+      localStorage.setItem('promoUsedByMe', 'true');
+      // also keep a list of used promo codes locally for reference
+      const raw = localStorage.getItem('usedPromoCodes') || '[]';
+      const arr: string[] = JSON.parse(raw);
+      if (!arr.includes(code)) {
+        arr.push(code);
+        localStorage.setItem('usedPromoCodes', JSON.stringify(arr));
+      }
+      setPromoUsedByMe(true);
+    } catch (err) {
+      console.warn('Could not persist promo usage locally', err);
+    }
+  };
   const [profileType, setProfileType] = useState('');
   const [showProfileTypeInput, setShowProfileTypeInput] = useState(false);
   
@@ -275,6 +295,8 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
       if (res.ok) {
         setStatus('success');
         setFormSubmitted(true);
+        // mark promo used locally so field disappears next time
+        if (promoCode) markPromoUsed(promoCode.trim());
         setStep(10);
         window.scrollTo(0, 0);
       } else {
@@ -525,17 +547,19 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
                />
              </div>
 
-            <div>
-              <label className="label">Code promo (optionnel)</label>
-              <input
-                type="text"
-                placeholder="Entrez un code promo"
-                value={promoCode}
-                onChange={e => setPromoCode(e.target.value)}
-                className="input-field"
-              />
-              <p className="text-xs text-slate-400 mt-2">Ne saisissez pas votre propre code de parrainage.</p>
-            </div>
+            {!promoUsedByMe && (
+              <div>
+                <label className="label">Code promo (optionnel)</label>
+                <input
+                  type="text"
+                  placeholder="Entrez un code promo"
+                  value={promoCode}
+                  onChange={e => setPromoCode(e.target.value)}
+                  className="input-field"
+                />
+                <p className="text-xs text-slate-400 mt-2">Ne saisissez pas votre propre code de parrainage.</p>
+              </div>
+            )}
 
              {status === 'error' && (
                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
