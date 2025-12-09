@@ -41,12 +41,19 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
     <div className="w-full" style={{ maxWidth: width }}>
       <div className="relative overflow-hidden rounded-2xl shadow-md bg-white">
         <div className="w-full h-full">
-          <img
-            src={images[index]}
-            alt={`slide-${index}`}
-            className="w-full h-[220px] object-cover block"
-            style={{ height: typeof height === 'number' ? `${height}px` : height }}
-          />
+          <a
+            href="https://www.facebook.com/people/CVLM-CI/61584701370592/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Ouvrir la page Facebook CVLM-CI"
+          >
+            <img
+              src={images[index]}
+              alt={`slide-${index}`}
+              className="w-full h-[220px] object-cover block"
+              style={{ height: typeof height === 'number' ? `${height}px` : height }}
+            />
+          </a>
         </div>
 
         {/* Controls */}
