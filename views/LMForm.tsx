@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { showToast } from '../components/toast';
 import { Button } from '../components/Button';
 import { GlassCard } from '../components/GlassCard';
 import {
   ArrowRight, ArrowLeft, Check, User, Mail, MapPin,
   Briefcase, Send, AlertCircle, FileText, X
 } from 'lucide-react';
-import { Screen, Template, LMFormData, UserProfile } from '../types';
+import { Screen, Template, LMFormData, UserProfile, isProfileComplete } from '../types';
 import { saveLMVersion, getAllLMVersions } from '../services/lmVersionService';
 
 interface LMFormProps {
@@ -334,35 +335,80 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
           </GlassCard>
         )}
 
+        {/* Profile Incomplete Warning */}
+        {status === 'success' && !isProfileComplete(userProfile) && (
+          <GlassCard className="bg-yellow-50/50 border-yellow-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-yellow-700">Complétez votre profil</p>
+                <p className="text-sm text-yellow-600">Pour une meilleure expérience, veuillez remplir vos informations personnelles dans l'espace compte.</p>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
         {/* Navigation Buttons */}
         <div className="flex gap-3 pt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={() => setStep(Math.max(0, step - 1))}
-            disabled={step === 0 || status === 'sending'}
-          >
-            <ArrowLeft size={18} /> Précédent
-          </Button>
-          
-          {step < steps.length - 1 ? (
+          {status !== 'success' && (
             <Button
               type="button"
+              variant="secondary"
               fullWidth
-              onClick={() => setStep(Math.min(steps.length - 1, step + 1))}
-              disabled={status === 'sending'}
+              onClick={() => setStep(Math.max(0, step - 1))}
+              disabled={step === 0 || status === 'sending'}
             >
-              Suivant <ArrowRight size={18} />
+              <ArrowLeft size={18} /> Précédent
             </Button>
+          )}
+          
+          {status === 'success' ? (
+            <>
+              {!isProfileComplete(userProfile) && (
+                <Button
+                  type="button"
+                  fullWidth
+                  onClick={() => {
+                    showToast('Veuillez compléter votre profil pour continuer', 'info');
+                    setScreen(Screen.SETTINGS);
+                  }}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                  Compléter le profil
+                </Button>
+              )}
+              <Button
+                type="button"
+                fullWidth
+                onClick={() => {
+                  onSubmitSuccess(selectedTemplate?.name || 'Lettre de Motivation');
+                  setScreen(Screen.DASHBOARD);
+                }}
+              >
+                Retour au Tableau de Bord
+              </Button>
+            </>
           ) : (
-            <Button
-              type="submit"
-              fullWidth
-              disabled={status === 'sending'}
-            >
-              <Send size={18} /> {status === 'sending' ? 'Envoi...' : 'Envoyer la Lettre'}
-            </Button>
+            <>
+              {step < steps.length - 1 ? (
+                <Button
+                  type="button"
+                  fullWidth
+                  onClick={() => setStep(Math.min(steps.length - 1, step + 1))}
+                  disabled={status === 'sending'}
+                >
+                  Suivant <ArrowRight size={18} />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  fullWidth
+                  disabled={status === 'sending'}
+                >
+                  <Send size={18} /> {status === 'sending' ? 'Envoi...' : 'Envoyer la Lettre'}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </form>

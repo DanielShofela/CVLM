@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
+import { ImageCarousel } from '../components/ImageCarousel';
 import { Heart, Eye, Share2, Plus, Search, X, Check, FileText } from 'lucide-react';
 import { Template, Screen, UserProfile } from '../types';
 import { Button } from '../components/Button';
@@ -69,6 +70,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ setScreen, onCreateCV, onC
             {cat}
           </button>
         ))}
+      </div>
+
+      {/* Ads / Promo Carousel Section */}
+      <div className="space-y-3 mb-8">
+        <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wider px-1">À découvrir</h2>
+        <div className="space-y-6">
+          <ImageCarousel
+            images={[
+              '/pub/594958602_1306971441187616_2000253200515186132_n.jpg',
+              '/pub/595091091_122096383569156712_4442960375816810774_n.jpg'
+            ]}
+            width={520}
+            height={250}
+            autoPlay
+            autoPlayInterval={4500}
+          />
+        </div>
       </div>
 
       {/* Grid */}

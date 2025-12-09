@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { showToast } from '../components/toast';
 import { Button } from '../components/Button';
 import { GlassCard } from '../components/GlassCard';
 import { VersionSelector } from '../components/VersionSelector';
@@ -8,7 +9,7 @@ import {
   Briefcase, GraduationCap, Globe, Award, Heart, MessageSquare, 
   Wand2, Send, Camera, Info, AlertCircle 
 } from 'lucide-react';
-import { Screen, Template, CVVersion, CVFormData, UserProfile } from '../types';
+import { Screen, Template, CVVersion, CVFormData, UserProfile, isProfileComplete } from '../types';
 import { saveCVRequest } from '../services/supabaseClient';
 import {
   saveVersion,
@@ -40,6 +41,7 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
   const [showVersionSelector, setShowVersionSelector] = useState(false);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [formSubmitted, setFormSubmitted] = useState(false);
   const [profileType, setProfileType] = useState('');
   const [showProfileTypeInput, setShowProfileTypeInput] = useState(false);
   
@@ -167,14 +169,14 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
       const cleanName = formData.fullName.trim();
 
       if (!cleanName) {
-        alert("Le nom complet est requis pour continuer.");
+        showToast("Le nom complet est requis pour continuer.", 'error');
         return;
       }
 
       // Regex robuste qui accepte les emails standards
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!cleanEmail || !emailRegex.test(cleanEmail)) {
-        alert("Adresse email invalide. Vérifiez qu'il n'y a pas d'espaces inutiles.");
+        showToast("Adresse email invalide. Vérifiez qu'il n'y a pas d'espaces inutiles.", 'error');
         return;
       }
 
@@ -186,7 +188,7 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
 
     // Step 8 Validation: Assistant IA
     if (step === 8 && !formData.draft) {
-      alert("Veuillez cliquer sur 'Générer l'ébauche' pour créer votre profil avec l'IA.");
+      showToast("Cliquez sur 'Générer l'ébauche' pour créer votre profil avec l'IA.", 'info');
       return;
     }
 
@@ -263,9 +265,9 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
 
       if (res.ok) {
         setStatus('success');
-        setTimeout(() => {
-            onSubmitSuccess(selectedTemplate?.name || 'Modèle Inconnu');
-        }, 2000);
+        setFormSubmitted(true);
+        setStep(10);
+        window.scrollTo(0, 0);
       } else {
         setStatus('error');
       }
@@ -351,19 +353,6 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
                  <input type="text" placeholder="Nationalité" value={formData.nationality} onChange={e => updateField('nationality', e.target.value)} className="input-field" />
               </div>
               <input type="text" placeholder="Portfolio / LinkedIn (URL)" value={formData.portfolioUrl} onChange={e => updateField('portfolioUrl', e.target.value)} className="input-field" />
-            </div>
-
-            <div className="pt-4 border-t border-slate-100">
-               <label className="block text-sm font-medium text-slate-700 mb-2">Photo Professionnelle</label>
-               <a 
-                 href="https://wa.me/2250170561121?text=Bonjour,%20je%20vous%20contacte%20suite%20%C3%A0%20ma%20demande%20de%20cr%C3%A9ation%20de%20CV.%20Voici%20ma%20photo%20professionnelle."
-                 target="_blank"
-                 rel="noreferrer"
-                 className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] text-white rounded-xl font-bold hover:bg-[#128C7E] transition-colors shadow-lg shadow-green-200"
-               >
-                 <Camera size={20} /> Envoyer ma photo via WhatsApp
-               </a>
-               <p className="text-xs text-slate-400 mt-2 text-center">La photo sera associée à votre dossier manuellement.</p>
             </div>
           </div>
         );
@@ -532,11 +521,40 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
                  <AlertCircle size={16} /> Erreur lors de l'envoi. Réessayez.
                </div>
              )}
-              {status === 'success' && (
-               <div className="p-3 bg-green-50 text-green-600 rounded-lg text-sm flex items-center gap-2">
-                 <Check size={16} /> Demande envoyée avec succès !
+           </div>
+        );
+
+      case 10: // Photo Upload - After successful submission
+        return (
+           <div className="space-y-6">
+             <h3 className="font-bold text-lg flex items-center gap-2 text-electric-600">
+               <Check size={24} /> Demande Envoyée !
+             </h3>
+             <div className="bg-green-50 p-6 rounded-2xl border border-green-200">
+               <p className="text-green-700 font-semibold mb-2">✓ Votre demande de CV a été reçue avec succès.</p>
+               <p className="text-sm text-green-600">Nous allons examiner vos informations et préparer votre CV personnalisé.</p>
+             </div>
+             
+             {!isProfileComplete(userProfile) && (
+               <div className="bg-yellow-50 p-4 rounded-2xl border border-yellow-200">
+                 <p className="text-yellow-700 font-semibold mb-2">⚠️ Complétez votre profil</p>
+                 <p className="text-sm text-yellow-600 mb-3">Pour une meilleure expérience, veuillez compléter vos informations personnelles dans l'espace compte.</p>
                </div>
              )}
+             
+             <div className="pt-6 border-t border-slate-100">
+               <label className="block text-sm font-medium text-slate-700 mb-4">Étape suivante : Votre photo professionnelle</label>
+               <p className="text-sm text-slate-600 mb-4">Pour finaliser votre CV, envoyez-nous votre photo professionnelle via WhatsApp. Elle sera intégrée à votre dossier.</p>
+               <a 
+                 href="https://wa.me/2250170561121?text=Bonjour,%20je%20vous%20contacte%20suite%20%C3%A0%20ma%20demande%20de%20cr%C3%A9ation%20de%20CV.%20Voici%20ma%20photo%20professionnelle."
+                 target="_blank"
+                 rel="noreferrer"
+                 className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] text-white rounded-xl font-bold hover:bg-[#128C7E] transition-colors shadow-lg shadow-green-200"
+               >
+                 <Camera size={20} /> Envoyer ma photo via WhatsApp
+               </a>
+               <p className="text-xs text-slate-400 mt-3 text-center">La photo sera associée à votre dossier manuellement.</p>
+             </div>
            </div>
         );
 
@@ -555,10 +573,16 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
          <div className="flex flex-col items-center">
            {!showVersionSelector && !showProfileTypeInput && (
              <>
-               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Étape {step} / 9</span>
-               <div className="w-32 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
-                 <div className="h-full bg-electric-600 transition-all duration-500" style={{ width: `${(step / 9) * 100}%` }} />
-               </div>
+               {step !== 10 ? (
+                 <>
+                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Étape {step} / 9</span>
+                   <div className="w-32 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                     <div className="h-full bg-electric-600 transition-all duration-500" style={{ width: `${(step / 9) * 100}%` }} />
+                   </div>
+                 </>
+               ) : (
+                 <span className="text-xs font-bold text-green-600 uppercase tracking-widest">✓ Complété</span>
+               )}
              </>
            )}
            {showVersionSelector && <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Vos Versions</span>}
@@ -595,7 +619,7 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
          
          {!showVersionSelector && !showProfileTypeInput && (
            <>
-             {step > 0 && (
+             {step > 0 && step !== 10 && (
                <Button variant="secondary" onClick={handleBack} type="button" className="flex-1 py-1.5 px-2 text-xs">
                  Retour
                </Button>
@@ -605,11 +629,36 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
                <Button onClick={handleNext} type="button" className="flex-1 py-1.5 px-2 text-xs">
                  {step === 0 ? "Commencer" : "Suivant"}
                </Button>
-             ) : (
-                <Button onClick={handleSubmit} type="button" className="flex-1 py-1.5 px-2 text-xs bg-green-600 hover:bg-green-700" disabled={status === 'sending' || status === 'success'}>
+             ) : step === 9 ? (
+                <Button onClick={handleSubmit} type="button" className="flex-1 py-1.5 px-2 text-xs bg-green-600 hover:bg-green-700" disabled={status === 'sending'}>
                   {status === 'sending' ? 'Envoi...' : 'Envoyer'}
                 </Button>
-             )}
+             ) : step === 10 ? (
+               <div className="flex gap-2 w-full flex-col">
+                 {!isProfileComplete(userProfile) && (
+                   <Button 
+                     onClick={() => {
+                       showToast('Veuillez compléter votre profil pour continuer', 'info');
+                       setScreen(Screen.SETTINGS);
+                     }} 
+                     type="button" 
+                     className="flex-1 py-1.5 px-2 text-xs bg-yellow-600 hover:bg-yellow-700"
+                   >
+                     Compléter le profil
+                   </Button>
+                 )}
+                 <Button 
+                   onClick={() => {
+                     onSubmitSuccess(selectedTemplate?.name || 'Modèle Inconnu');
+                     setScreen(Screen.DASHBOARD);
+                   }} 
+                   type="button" 
+                   className="flex-1 py-1.5 px-2 text-xs"
+                 >
+                   Retour au Tableau de Bord
+                 </Button>
+               </div>
+             ) : null}
            </>
          )}
         </div>

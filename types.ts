@@ -134,3 +134,18 @@ export interface LMVersionHistoryResponse {
   versions: LMVersion[];
   hasData: boolean;
 }
+
+/**
+ * Vérifie si le profil utilisateur est complet
+ * Retourne true si les champs essentiels sont remplis
+ */
+export function isProfileComplete(profile: UserProfile): boolean {
+  return !!(
+    profile.name?.trim() &&
+    profile.email?.trim() &&
+    profile.phone?.trim() &&
+    profile.jobTitle?.trim() &&
+    profile.locationCity?.trim() &&
+    profile.locationCountry?.trim()
+  );
+}

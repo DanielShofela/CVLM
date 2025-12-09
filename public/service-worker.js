@@ -1,8 +1,13 @@
-const CACHE_NAME = 'cvlm-v1';
+// Bump cache name when icons or app shell change so clients get fresh assets
+const CACHE_NAME = 'cvlm-v2';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  // cache key icon files to ensure updates are pulled on install
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/favicon-32x32.png'
 ];
 
 // Installation du service worker

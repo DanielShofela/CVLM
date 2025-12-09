@@ -36,7 +36,7 @@ const DEFAULT_PROFILE: UserProfile = {
 };
 
 const App: React.FC = () => {
-  const [screen, setScreen] = useState<Screen>(Screen.ONBOARDING);
+  const [screen, setScreen] = useState<Screen>(Screen.DASHBOARD);
   
   // Persistence State Initialization
   const [cvs, setCvs] = useState<UserCV[]>(() => {
