@@ -42,6 +42,7 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
   const [profileType, setProfileType] = useState('');
   const [showProfileTypeInput, setShowProfileTypeInput] = useState(false);
   
@@ -204,6 +205,12 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
 
   // Submission
   const handleSubmit = async () => {
+    // Validate promo code: user cannot use their own referral code
+    if (promoCode && userProfile?.referralCode && promoCode.trim() === userProfile.referralCode) {
+      showToast("Vous ne pouvez pas utiliser votre propre code promo.", 'error');
+      return;
+    }
+
     setStatus('sending');
 
     // Formatting complex fields for the email
@@ -236,7 +243,8 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
       interests_volunteering: formData.interestsVolunteering,
       references: formData.references,
       generated_draft: formData.draft,
-      profile_type: profileType // Add profile type to email
+      profile_type: profileType, // Add profile type to email
+      promo_code: promoCode || ''
     };
 
     try {
@@ -250,7 +258,8 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
         templateName: selectedTemplate?.name || 'Inconnu',
         templateId: selectedTemplate?.id,
         profileType: profileType,
-        versionId: savedVersion.id
+        versionId: savedVersion.id,
+        promoCode: promoCode || ''
       });
 
       // 3. Send to Formspree (Email Notification)
@@ -515,6 +524,18 @@ export const CVForm: React.FC<CVFormProps> = ({ setScreen, selectedTemplate, onS
                   className="input-field h-24"
                />
              </div>
+
+            <div>
+              <label className="label">Code promo (optionnel)</label>
+              <input
+                type="text"
+                placeholder="Entrez un code promo"
+                value={promoCode}
+                onChange={e => setPromoCode(e.target.value)}
+                className="input-field"
+              />
+              <p className="text-xs text-slate-400 mt-2">Ne saisissez pas votre propre code de parrainage.</p>
+            </div>
 
              {status === 'error' && (
                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">

@@ -21,6 +21,7 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [generateCover, setGenerateCover] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showLoadVersions, setShowLoadVersions] = useState(true);
   const [savedVersions, setSavedVersions] = useState(getAllLMVersions());
@@ -95,6 +96,14 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
         return;
       }
 
+      // Promo code validation: user cannot use their own referral code
+      if (promoCode && userProfile?.referralCode && promoCode.trim() === userProfile.referralCode) {
+        setErrorMessage("Vous ne pouvez pas utiliser votre propre code promo.");
+        showToast("Vous ne pouvez pas utiliser votre propre code promo.", 'error');
+        setStatus('error');
+        return;
+      }
+
       // Envoyer les données via FormSpree
       const response = await fetch('https://formspree.io/f/mzznvpvz', {
         method: 'POST',
@@ -115,6 +124,7 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
           coverLetter: formData.coverLetter,
           templateName: selectedTemplate?.name || 'Sans modèle',
           timestamp: new Date().toISOString(),
+          promoCode: promoCode || ''
         }),
       });
 
@@ -307,6 +317,19 @@ export const LMForm: React.FC<LMFormProps> = ({ setScreen, selectedTemplate, onS
               )}
             </GlassCard>
           )}
+        </div>
+
+        {/* Promo Code Field */}
+        <div>
+          <label className="label">Code promo (optionnel)</label>
+          <input
+            type="text"
+            placeholder="Entrez un code promo"
+            value={promoCode}
+            onChange={e => setPromoCode(e.target.value)}
+            className="input-field"
+          />
+          <p className="text-xs text-slate-400 mt-2">Ne saisissez pas votre propre code de parrainage.</p>
         </div>
 
         {/* Error Message */}
