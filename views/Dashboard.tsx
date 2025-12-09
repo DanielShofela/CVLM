@@ -141,27 +141,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ setScreen, onCreateCV, onC
                 <span className="text-xs text-slate-400">{template.tags.join(', ')}</span>
               </div>
               <button
-                className="text-slate-400 hover:text-electric-600"
-                onClick={async (e) => {
+                className="text-slate-400 hover:text-electric-600 transition-colors"
+                onClick={(e) => {
                   e.stopPropagation();
-                  try {
-                    const shareUrl = `${window.location.origin}/?template=${template.id}`;
-                    if (navigator.share) {
-                      await navigator.share({
-                        title: template.name,
-                        text: `Regarde ce modèle sur CVLM: ${template.name}`,
-                        url: shareUrl
-                      });
+                  const baseUrl = typeof window !== 'undefined' ? (window.location.origin || 'https://cvlm.app') : 'https://cvlm.app';
+                  const shareUrl = `${baseUrl}/?template=${template.id}`;
+                  
+                  if (typeof navigator !== 'undefined' && navigator.share) {
+                    navigator.share({
+                      title: template.name,
+                      text: `Regarde ce modèle sur CVLM: ${template.name}`,
+                      url: shareUrl
+                    }).then(() => {
                       showToast('Partage réussi', 'success');
-                    } else if (navigator.clipboard) {
-                      await navigator.clipboard.writeText(shareUrl);
+                    }).catch((err) => {
+                      if (err.name !== 'AbortError') {
+                        console.error('Share error:', err);
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(shareUrl).then(() => {
+                            showToast('Lien copié dans le presse-papier', 'success');
+                          });
+                        }
+                      }
+                    });
+                  } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(shareUrl).then(() => {
                       showToast('Lien copié dans le presse-papier', 'success');
-                    } else {
-                      showToast('Partage non supporté sur ce navigateur', 'info');
-                    }
-                  } catch (err) {
-                    console.error('Share error', err);
-                    showToast('Le partage a échoué ou a été annulé', 'error');
+                    }).catch(() => {
+                      showToast('Impossible de copier le lien. Veuillez réessayer.', 'error');
+                    });
+                  } else {
+                    showToast('Partage non supporté sur ce navigateur', 'info');
                   }
                 }}
               >
