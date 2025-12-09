@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { ImageCarousel } from '../components/ImageCarousel';
 import { Heart, Eye, Share2, Plus, Search, X, Check, FileText } from 'lucide-react';
+import { showToast } from '../components/toast';
 import { Template, Screen, UserProfile } from '../types';
 import { Button } from '../components/Button';
 
@@ -139,7 +140,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ setScreen, onCreateCV, onC
                 <h3 className="font-semibold text-slate-800">{template.name}</h3>
                 <span className="text-xs text-slate-400">{template.tags.join(', ')}</span>
               </div>
-              <button className="text-slate-400 hover:text-electric-600">
+              <button
+                className="text-slate-400 hover:text-electric-600"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const shareUrl = `${window.location.origin}/?template=${template.id}`;
+                    if (navigator.share) {
+                      await navigator.share({
+                        title: template.name,
+                        text: `Regarde ce modèle sur CVLM: ${template.name}`,
+                        url: shareUrl
+                      });
+                      showToast('Partage réussi', 'success');
+                    } else if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(shareUrl);
+                      showToast('Lien copié dans le presse-papier', 'success');
+                    } else {
+                      showToast('Partage non supporté sur ce navigateur', 'info');
+                    }
+                  } catch (err) {
+                    console.error('Share error', err);
+                    showToast('Le partage a échoué ou a été annulé', 'error');
+                  }
+                }}
+              >
                 <Share2 size={18} />
               </button>
             </div>
