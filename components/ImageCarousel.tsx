@@ -16,6 +16,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   autoPlayInterval = 4000
 }) => {
   const [index, setIndex] = useState(0);
+  const [validImages, setValidImages] = useState<string[]>([]);
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -28,6 +29,35 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
     };
   }, [autoPlay, autoPlayInterval, images.length]);
 
+  // Preprocess image URLs (encode and check loadability)
+  useEffect(() => {
+    let mounted = true;
+    const encoded = images.map(img => encodeURI(img));
+    const checks = encoded.map(url => new Promise<string | null>((resolve) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => resolve(url);
+      img.onerror = () => resolve(null);
+    }));
+
+    Promise.all(checks).then(results => {
+      if (!mounted) return;
+      const good = results.filter(Boolean) as string[];
+      if (good.length === 0) {
+        // No valid images, keep empty to hide the carousel
+        setValidImages([]);
+      } else {
+        setValidImages(good);
+      }
+      // Reset index if necessary
+      setIndex(prev => Math.min(prev, Math.max(0, (good.length - 1))));
+    }).catch(() => {
+      if (mounted) setValidImages(encoded);
+    });
+
+    return () => { mounted = false; };
+  }, [images]);
+
   const goTo = (i: number) => {
     setIndex(i % images.length);
   };
@@ -35,7 +65,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   const prev = () => setIndex(prev => (prev - 1 + images.length) % images.length);
   const next = () => setIndex(prev => (prev + 1) % images.length);
 
-  if (!images || images.length === 0) return null;
+  if (!validImages || validImages.length === 0) return null;
 
   return (
     <div className="w-full" style={{ maxWidth: width }}>
@@ -48,10 +78,14 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
             aria-label="Ouvrir la page Facebook CVLM-CI"
           >
             <img
-              src={images[index]}
+              src={validImages[index]}
               alt={`slide-${index}`}
               className="w-full h-[220px] object-cover block"
               style={{ height: typeof height === 'number' ? `${height}px` : height }}
+              onError={(e) => {
+                // Replace with fallback icon if image cannot be loaded
+                (e.currentTarget as HTMLImageElement).src = '/icons/icon-192x192.png';
+              }}
             />
           </a>
         </div>
