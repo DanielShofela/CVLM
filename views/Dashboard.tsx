@@ -80,7 +80,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ setScreen, onCreateCV, onC
           <ImageCarousel
             images={[
               '/pub/594958602_1306971441187616_2000253200515186132_n.jpg',
-              '/pub/595091091_122096383569156712_4442960375816810774_n.jpg',
               '/pub/Où vous sitiuee-vous (3).png',
               '/pub/Où vous sitiuee-vous (4).png'
             ]}
