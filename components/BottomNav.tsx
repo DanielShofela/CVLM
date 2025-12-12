@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import InstallInstructions from './InstallInstructions';
 import { showToast } from '../components/toast';
 import { LayoutGrid, FileText, Database, Settings, Smartphone } from 'lucide-react';
 import { Screen } from '../types';
@@ -17,6 +18,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, setScreen }
   ];
 
   const [isInstalled, setIsInstalled] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -33,8 +36,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, setScreen }
     const onInstalled = () => setIsInstalled(true);
     window.addEventListener('appinstalled', onInstalled as EventListener);
 
+    const onBeforeInstall = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // also store globally so other components can access it if needed
+      (window as any).deferredPrompt = e;
+    };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall as EventListener);
+
     return () => {
       window.removeEventListener('appinstalled', onInstalled as EventListener);
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall as EventListener);
     };
   }, []);
 
@@ -67,22 +80,37 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, setScreen }
           <button
             key="install"
             onClick={() => {
-              // Access global deferredPrompt if available
-              const dp: any = (window as any).deferredPrompt;
+              // Access deferredPrompt captured from the browser (Android/Chrome)
+              const dp: any = deferredPrompt ?? (window as any).deferredPrompt;
               if (dp) {
-                dp.prompt();
-                dp.userChoice.then((choiceResult: any) => {
-                  console.log('User choice for install:', choiceResult);
-                  // Clear prompt reference
+                (async () => {
+                  try {
+                    await dp.prompt();
+                    const choiceResult = await dp.userChoice;
+                    console.log('User choice for install:', choiceResult);
+                    if (choiceResult && choiceResult.outcome === 'accepted') {
+                      import('../components/toast').then(mod => {
+                        mod.showToast('Merci ! L\'application a été installée.', 'success');
+                      }).catch(() => showToast('Merci ! L\'application a été installée.', 'success'));
+                      setIsInstalled(true);
+                    } else {
+                      import('../components/toast').then(mod => {
+                        mod.showToast('Installation annulée.', 'info');
+                      }).catch(() => showToast('Installation annulée.', 'info'));
+                    }
+                  } catch (err) {
+                    console.warn('Install prompt failed', err);
+                    import('../components/toast').then(mod => {
+                      mod.showToast('Impossible d\'ouvrir la fenêtre d\'installation.', 'info');
+                    }).catch(() => showToast('Impossible d\'ouvrir la fenêtre d\'installation.', 'info'));
+                  }
+                  setDeferredPrompt(null);
                   (window as any).deferredPrompt = null;
-                });
+                })();
               } else {
                 // Fallback: show a short instruction for iOS
-                import('../components/toast').then(mod => {
-                  mod.showToast("Pour installer l'application : ouvrez le menu du navigateur et choisissez « Ajouter à l'écran d'accueil ».", 'info');
-                }).catch(() => {
-                  showToast("Pour installer l'application : ouvrez le menu du navigateur et choisissez « Ajouter à l'écran d'accueil ».", 'info');
-                });
+                // On iOS there's no programmatic install: show an instruction modal
+                setShowInstallModal(true);
               }
             }}
             className="flex flex-col items-center gap-1 w-12 group"
@@ -94,5 +122,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, setScreen }
           </button>
         )}
     </div>
+      {showInstallModal && (
+        <InstallInstructions onClose={() => setShowInstallModal(false)} />
+      )}
   );
 };
