@@ -20,14 +20,14 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!autoPlay || images.length <= 1) return;
+    if (!autoPlay || validImages.length <= 1) return;
     timerRef.current = window.setInterval(() => {
-      setIndex(prev => (prev + 1) % images.length);
+      setIndex(prev => (prev + 1) % validImages.length);
     }, autoPlayInterval);
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [autoPlay, autoPlayInterval, images.length]);
+  }, [autoPlay, autoPlayInterval, validImages.length]);
 
   // Preprocess image URLs (encode and check loadability)
   useEffect(() => {
@@ -59,11 +59,12 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   }, [images]);
 
   const goTo = (i: number) => {
-    setIndex(i % images.length);
+    if (validImages.length === 0) return;
+    setIndex(i % validImages.length);
   };
 
-  const prev = () => setIndex(prev => (prev - 1 + images.length) % images.length);
-  const next = () => setIndex(prev => (prev + 1) % images.length);
+  const prev = () => setIndex(prev => (prev - 1 + (validImages.length || 1)) % (validImages.length || 1));
+  const next = () => setIndex(prev => (prev + 1) % (validImages.length || 1));
 
   if (!validImages || validImages.length === 0) return null;
 
@@ -91,7 +92,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
         </div>
 
         {/* Controls */}
-        {images.length > 1 && (
+        {validImages.length > 1 && (
           <>
             <button
               onClick={prev}
@@ -110,7 +111,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
             </button>
 
             <div className="absolute left-1/2 -translate-x-1/2 bottom-3 flex gap-2">
-              {images.map((_, i) => (
+              {validImages.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => goTo(i)}
